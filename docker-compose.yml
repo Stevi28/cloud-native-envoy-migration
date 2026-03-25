@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  web-app:
+    build: .
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mongodb
+      - redis-cache
+
+  mongodb:
+    image: "mongo:latest"
+
+  redis:
+    image: "redis:alpine"
