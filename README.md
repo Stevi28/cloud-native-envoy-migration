@@ -8,10 +8,11 @@ This project demonstrates a professional DevOps workflow, transitioning a Node.j
 2. **Containerization (Docker)**: Solved the "Matrix from Hell" by bundling a Node.js app with its dependencies (Express, MongoDB client, Redis client) using a shared kernel architecture.
 3. **Orchestration (Docker Compose)**: Managed a multi-container production-ready stack including Node.js, MongoDB, and Redis, isolated behind the Envoy Gateway.
 4. **Infrastructure as Code (Scripts)**: Automated the Docker installation process on Ubuntu VMs.
-5. **Kubernetes Architecture**: Implemented a High Availability (HA) deployment with 3 replicas and self-healing capabilities.
-6. **Runtime Standards (CRI & OCI)**: Documented the transition from Docker Shim to **containerd** using the Container Runtime Interface.
-7. **Clean Architecture (.gitignore)**: Implemented Git standards to exclude local dependencies and OS-specific files, keeping the repository professional and lightweight.
-8. **Runtime Evolution (CRI)**: Added automated scripts for standalone **containerd** installation, moving away from Docker Shim as per modern Kubernetes requirements.
+5. **Kubernetes Architecture**: Implemented a High Availability (HA) deployment with 3 replicas, self-healing capabilities, and zero-downtime rolling updates.
+6. **Envoy on Kubernetes**: Deployed Envoy Proxy as a K8s Deployment with a ConfigMap-mounted configuration and NodePort Service — mirroring the Docker Compose setup inside the cluster.
+7. **Runtime Standards (CRI & OCI)**: Documented the transition from Docker Shim to **containerd** using the Container Runtime Interface.
+8. **Clean Architecture (.gitignore)**: Implemented Git standards to exclude local dependencies and OS-specific files, keeping the repository professional and lightweight.
+9. **Runtime Evolution (CRI)**: Added automated scripts for standalone **containerd** installation, moving away from Docker Shim as per modern Kubernetes requirements.
 
 ##  Architecture Diagram
 ```text
@@ -27,7 +28,7 @@ This project demonstrates a professional DevOps workflow, transitioning a Node.j
             |                                   |
             v                                   v
     +----------------+                  +----------------+
-    |   Node.js App  |                  |  Envoy Admin   | 
+    |   Node.js App  |                  |  Envoy Admin   |
     |   (Port 3000)  |                  |  (Port 9901)   |
     +----------------+                  +----------------+
             |
@@ -37,17 +38,19 @@ This project demonstrates a professional DevOps workflow, transitioning a Node.j
   [MongoDB]    [Redis]
 ```
 
+> This architecture is identical across both environments — Docker Compose for local dev, Kubernetes for production.
+
 ## Tech Stack & Tools
-- **Proxy/Gateway**: Envoy Proxy
-- **Runtime**: Node.js
+- **Proxy/Gateway**: Envoy Proxy v1.28
+- **Runtime**: Node.js 18 (Alpine)
 - **Container Engine**: Docker / containerd (CRI-compatible)
-- **Orchestrator**: Kubernetes (K8s)
+- **Orchestrator**: Kubernetes (K8s) via Minikube
 - **CLI Tools**: `docker`, `kubectl`, `crictl`, `nerdctl`
 
 ##  Project Structure
 - `/app`: Source code and package definitions.
-- `/envoy`: Envoy Proxy configuration
-- `/k8s`: Kubernetes Deployment manifests.
+- `/envoy`: Envoy Proxy configuration (used by Docker Compose).
+- `/k8s`: Kubernetes manifests (Deployment, Services, ConfigMap).
 - `/scripts`: Bash scripts for environment automation.
 - `/docs`: Technical deep-dives into CRI and CLI tooling.
 - `.gitignore`: Rules for excluding non-essential files.
@@ -57,6 +60,7 @@ This project demonstrates a professional DevOps workflow, transitioning a Node.j
 - **etcd Consistency & Scheduler Logic**: How K8s maintains state and decides where to place Pods.
 - **OCI Image Specifications**: Building standard-compliant images for any container runtime.
 - **Self-healing via Replicas**: Ensuring high availability through automated pod recovery.
+- **Zero-Downtime Rolling Updates**: Observed live as old pods terminated one-by-one while new ones came up.
 - **DB Connectivity Checks**: The root endpoint (`/`) actively pings MongoDB and Redis on each request, reporting live connection status for both databases.
 
 ## Quick Start & Execution
@@ -76,24 +80,57 @@ docker-compose up --build -d
 # Check if everything is running
 docker-compose ps
 ```
+
+**App URL**: http://localhost  
+**Envoy Admin**: http://localhost:9901
+
 ### 2. Run on Kubernetes (Minikube)
-To test the high-availability deployment:
+
+#### First-time setup — build the image inside Minikube's Docker daemon:
+```bash
+# Point Docker CLI to Minikube's internal daemon
+eval $(minikube docker-env)
+
+# Build the image where Minikube can find it
+docker build -t node-app:latest .
+```
+
+#### Deploy the full stack:
 ```bash
 # Start Minikube
 minikube start
 
-# Apply the Deployment manifest
-kubectl apply -f k8s/deployment.yaml
+# Apply all manifests (app, mongodb, redis, envoy)
+kubectl apply -f k8s/
 
-# Verify the 3 Replicas (Self-healing)
-kubectl get pods
+# Verify all pods are Running
+kubectl get pods -w
 ```
-**App URL**: http://localhost (No port needed, Envoy handles it!)
-**Envoy Admin**: http://localhost:9901
+
+#### Access the app:
+```bash
+minikube service envoy-proxy
+```
+
+> ⚠️ On macOS with the Docker driver, Minikube creates a localhost tunnel. **Keep that terminal open** — closing it stops the tunnel and the app becomes unreachable.
+
+**App URL**: provided by `minikube service envoy-proxy` (e.g. `http://127.0.0.1:XXXXX`)  
+**Envoy Admin**: second URL provided by the same command
+
+#### After updating the app image:
+```bash
+eval $(minikube docker-env)
+docker build -t node-app:latest .
+kubectl rollout restart deployment/cloud-native-app
+```
 
 ### 3. Cleanup
 To stop everything and free up system resources:
 ```bash
+# Docker Compose
 docker-compose down
+
+# Kubernetes
+kubectl delete -f k8s/
 minikube stop
 ```
