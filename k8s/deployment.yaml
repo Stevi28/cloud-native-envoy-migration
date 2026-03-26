@@ -20,9 +20,15 @@ spec:
             - containerPort: 3000
           env:
             - name: MONGO_URL
-              value: "mongodb://mongodb:27017"
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: MONGO_URL
             - name: REDIS_URL
-              value: "redis://redis-cache:6379"
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: REDIS_URL
           readinessProbe:
             httpGet:
               path: /
