@@ -14,7 +14,7 @@ sudo systemctl start docker
 sudo systemctl enable docker
 
 # check version
-docker version
+sudo docker version
 
 echo "Installation complete! Testing with hello-world..."
 sudo docker run hello-world
