@@ -5,8 +5,16 @@ const redis = require('redis');
 const app = express();
 const port = 3000;
 
+const MONGO_URL = process.env.MONGO_URL;
+const REDIS_URL = process.env.REDIS_URL;
+
+if (!MONGO_URL || !REDIS_URL) {
+  console.error('ERROR: MONGO_URL and REDIS_URL environment variables must be set.');
+  process.exit(1);
+}
+
 async function checkMongo() {
-  const client = new MongoClient('mongodb://mongodb:27017', {
+  const client = new MongoClient(MONGO_URL, {
     serverSelectionTimeoutMS: 3000,
   });
   try {
@@ -21,7 +29,7 @@ async function checkMongo() {
 }
 
 async function checkRedis() {
-  const client = redis.createClient({ url: 'redis://redis-cache:6379' });
+  const client = redis.createClient({ url: REDIS_URL });
   try {
     await client.connect();
     await client.ping();

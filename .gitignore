@@ -15,5 +15,8 @@ Thumbs.db
 .env
 .env.local
 
+# kubernetes secrets
+k8s/secrets.yaml
+
 # docker logs
 *.log
