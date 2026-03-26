@@ -1,11 +1,14 @@
-# expose the app deployment internally
 apiVersion: v1
 kind: Service
 metadata:
   name: web-app
+  labels:
+    app: web
 spec:
+  type: ClusterIP        # internal only — reachable by Envoy, not exposed to outside
   selector:
     app: web
   ports:
-    - port: 3000
+    - name: http
+      port: 3000
       targetPort: 3000
