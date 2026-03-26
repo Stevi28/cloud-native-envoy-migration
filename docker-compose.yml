@@ -12,6 +12,8 @@ services:
 
   web-app:
     build: .
+    env_file:
+      - .env
     depends_on:
       mongodb:
         condition: service_healthy
@@ -27,7 +29,7 @@ services:
   mongodb:
     image: "mongo:latest"
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"] 
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -36,7 +38,7 @@ services:
   redis-cache:
     image: "redis:alpine"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"] # returns PONG when ready
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 3
