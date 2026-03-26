@@ -10,7 +10,7 @@ sudo apt-get update
 sudo apt-get install docker.io -y
 
 # start docker service
-sudo systectl start docker
+sudo systemctl start docker
 sudo systemctl enable docker
 
 # check version

@@ -17,13 +17,13 @@ Kubernetes (v1.24+) removed support for **Docker Shim**. We now use the **CRI** 
 ## Practical Examples
 
 ### 1. Using kubectl (Orchestration)
-To deploy our 3-replica stack defined in `/k8s` to the cluster:
+To deploy the full stack defined in `/k8s` to the cluster:
 ```bash
-# Apply the deployment manifest
-kubectl apply -f k8s/deployment.yaml
+# Apply all manifests (app, mongodb, redis, envoy)
+kubectl apply -f k8s/
 
-# Verify that the 3 Pods are running
-kubectl get pods -l app=web
+# Verify that all Pods are running
+kubectl get pods -w
 ```
 
 ### 2. Using nerdctl (Node Level)
